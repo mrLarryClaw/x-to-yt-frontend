@@ -30,8 +30,17 @@ export default function HomeClient() {
       setUserName(getUser()?.displayName || '');
     }
     const p = searchParams.get('auth');
+    const reason = searchParams.get('reason');
     if (p === 'rejected') {
-      setError('Your Google account is not allowed to use this app.');
+      const reasonMap: Record<string, string> = {
+        'google_access_denied': 'You denied access to your Google account.',
+        'no_code': 'No authorization code received from Google.',
+        'exchange_failed': 'Failed to exchange authorization code with Google.',
+        'user_info_failed': 'Failed to get your Google account info.',
+        'email_not_verified': 'Your Google email is not verified.',
+        'email_not_allowed': 'Your email is not authorized for this app.',
+      };
+      setError(reasonMap[reason || ''] || 'Your Google account is not allowed to use this app.');
     }
   }, [searchParams]);
 
