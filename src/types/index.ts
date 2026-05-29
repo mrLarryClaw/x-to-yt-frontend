@@ -6,6 +6,7 @@ export interface User {
   displayName: string;
   avatarUrl?: string;
   isAllowed: boolean;
+  emailVerified?: boolean;
 }
 
 export interface Session {
