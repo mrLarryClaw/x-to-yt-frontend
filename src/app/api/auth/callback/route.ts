@@ -1,40 +1,55 @@
 import { NextRequest, NextResponse } from 'next/server';
 
+// Frontend base URL for redirects (not the API URL)
+const FRONTEND_URL = process.env.NEXT_PUBLIC_FRONTEND_URL || 'https://x-to-yt-frontend-production.up.railway.app';
+
 export async function GET(request: NextRequest) {
   const searchParams = request.nextUrl.searchParams;
   const code = searchParams.get('code');
-  if (!code) {
-    return NextResponse.redirect(new URL('/?auth=error', request.url));
+  const error = searchParams.get('error');
+
+  if (error === 'access_denied' || !code) {
+    return NextResponse.redirect(new URL('/?auth=rejected', FRONTEND_URL));
   }
 
   const apiUrl = process.env.NEXT_PUBLIC_API_URL || '';
   try {
-    const res = await fetch(`${apiUrl}/api/auth/google/callback`, {
-      method: 'POST',
+    // Exchange code with backend
+    const res = await fetch(`${apiUrl}/api/auth/google/callback?code=${encodeURIComponent(code)}`, {
+      method: 'GET',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ code }),
     });
 
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
-      if (body?.message?.toLowerCase().includes('allow') || body?.code === 'NOT_ALLOWED') {
-        return NextResponse.redirect(new URL('/?auth=rejected', request.url));
+      if (body?.detail?.toLowerCase().includes('allow') || body?.detail?.toLowerCase().includes('not allowed')) {
+        return NextResponse.redirect(new URL('/?auth=rejected', FRONTEND_URL));
       }
-      return NextResponse.redirect(new URL('/?auth=error', request.url));
+      return NextResponse.redirect(new URL('/?auth=error', FRONTEND_URL));
     }
 
     const data = await res.json();
-    const token = data?.session?.token || data?.token || '';
+    const sessionId = data?.session_id || data?.session?.token || data?.token || '';
     const user = data?.user || null;
-    if (!token) {
-      return NextResponse.redirect(new URL('/?auth=error', request.url));
+    if (!sessionId) {
+      return NextResponse.redirect(new URL('/?auth=error', FRONTEND_URL));
     }
 
-    const redirectUrl = new URL('/', request.url);
-    redirectUrl.searchParams.set('token', token);
-    redirectUrl.searchParams.set('user', encodeURIComponent(JSON.stringify(user)));
-    return NextResponse.redirect(redirectUrl);
-  } catch {
-    return NextResponse.redirect(new URL('/?auth=error', request.url));
+    // Redirect to frontend home with success params
+    const redirectUrl = new URL('/?auth=success', FRONTEND_URL);
+    const response = NextResponse.redirect(redirectUrl);
+
+    // Set session cookie
+    response.cookies.set('session_id', sessionId, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60, // 7 days
+    });
+
+    return response;
+  } catch (err) {
+    console.error('OAuth callback error:', err);
+    return NextResponse.redirect(new URL('/?auth=error', FRONTEND_URL));
   }
 }
