@@ -96,6 +96,15 @@ export async function deleteJob(id: string): Promise<void> {
   if (!res.ok) return handleError(res);
 }
 
+export async function deleteYouTubeVideo(jobId: string): Promise<Job> {
+  const res = await fetchWithAuth(`/api/jobs/${jobId}/youtube`, {
+    method: 'DELETE',
+  });
+  if (!res.ok) return handleError(res);
+  const raw = await res.json();
+  return mapJob(raw);
+}
+
 export async function logout(): Promise<void> {
   const res = await fetchWithAuth('/api/auth/logout', { method: 'POST' });
   if (!res.ok) return handleError(res);

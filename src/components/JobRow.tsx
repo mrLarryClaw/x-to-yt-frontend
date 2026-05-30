@@ -1,8 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { Job } from '@/types';
 import StatusBadge from './StatusBadge';
+import { deleteYouTubeVideo } from '@/lib/api';
 
 function timeAgo(dateStr: string): string {
   const now = Date.now();
@@ -23,10 +25,13 @@ function truncateUrl(url: string, max = 60): string {
 
 interface JobRowProps {
   job: Job;
+  onDeleted?: () => void;
 }
 
-export default function JobRow({ job }: JobRowProps) {
+export default function JobRow({ job, onDeleted }: JobRowProps) {
   const router = useRouter();
+  const [deleting, setDeleting] = useState(false);
+
   return (
     <button
       onClick={() => router.push(`/job/${job.id}`)}
@@ -38,16 +43,38 @@ export default function JobRow({ job }: JobRowProps) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {job.youtubeUrl && job.status === 'completed' && (
-          <a
-            href={job.youtubeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={(e) => e.stopPropagation()}
-            className="rounded-md bg-[#EF4444] px-2 py-1 text-xs font-medium text-white hover:bg-red-600 transition"
-            title="Open on YouTube"
-          >
-            ▶ YouTube
-          </a>
+          <>
+            <a
+              href={job.youtubeUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={(e) => e.stopPropagation()}
+              className="rounded-md bg-[#EF4444] px-2 py-1 text-xs font-medium text-white hover:bg-red-600 transition"
+              title="Open on YouTube"
+            >
+              ▶ YouTube
+            </a>
+            <button
+              onClick={async (e) => {
+                e.stopPropagation();
+                if (!confirm('Delete this video from YouTube?')) return;
+                setDeleting(true);
+                try {
+                  await deleteYouTubeVideo(job.id);
+                  onDeleted?.();
+                } catch {
+                  alert('Failed to delete YouTube video');
+                } finally {
+                  setDeleting(false);
+                }
+              }}
+              disabled={deleting}
+              className="rounded-md bg-[#6B7280] px-2 py-1 text-xs font-medium text-white hover:bg-[#4B5563] transition disabled:opacity-50"
+              title="Delete from YouTube"
+            >
+              {deleting ? '⋯' : '🗑'}
+            </button>
+          </>
         )}
         <StatusBadge status={job.status} />
       </div>

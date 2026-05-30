@@ -12,14 +12,15 @@ export default function HistoryPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  useEffect(() => {
+  const loadJobs = () => {
+    setLoading(true);
+    setError('');
     getJobs()
       .then((data) => {
         setJobs(data);
       })
       .catch((err) => {
         console.error('Failed to load jobs:', err);
-        // If unauthorized, redirect to login
         if (err?.message?.includes('401') || err?.message?.includes('unauthorized')) {
           localStorage.removeItem('x2yt_token');
           router.push('/');
@@ -28,6 +29,10 @@ export default function HistoryPage() {
         setError('Could not load history. Try logging in again.');
       })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    loadJobs();
   }, []);
 
   return (
@@ -52,7 +57,7 @@ export default function HistoryPage() {
         <ul className="flex flex-col gap-3">
           {jobs.map((job) => (
             <li key={job.id}>
-              <JobRow job={job} />
+              <JobRow job={job} onDeleted={loadJobs} />
             </li>
           ))}
         </ul>
