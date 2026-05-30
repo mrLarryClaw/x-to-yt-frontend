@@ -46,7 +46,9 @@ export async function createJob(payload: CreateJobRequest): Promise<Job> {
 export async function getJobs(): Promise<Job[]> {
   const res = await fetchWithAuth('/api/jobs');
   if (!res.ok) return handleError(res);
-  return res.json();
+  const data = await res.json();
+  // Backend returns { jobs: Job[], total: number }
+  return Array.isArray(data) ? data : (data.jobs ?? []);
 }
 
 export async function getJob(id: string): Promise<Job> {
