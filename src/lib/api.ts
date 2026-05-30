@@ -1,5 +1,25 @@
 import { Job, CreateJobRequest, JobStatus, ApiError, User } from '@/types';
 
+// Backend returns snake_case; frontend uses camelCase
+function mapJob(raw: any): Job {
+  return {
+    id: raw.id,
+    userId: raw.user_id,
+    sourceUrl: raw.source_url ?? '',
+    status: raw.status,
+    progressStage: raw.progress_stage,
+    progressPercent: raw.progress_pct,
+    youtubeVideoId: raw.youtube_video_id,
+    youtubeUrl: raw.youtube_url,
+    errorCode: raw.error_code,
+    errorMessage: raw.error_message,
+    createdAt: raw.created_at,
+    updatedAt: raw.updated_at,
+    startedAt: raw.started_at,
+    completedAt: raw.completed_at,
+  };
+}
+
 const API_URL = process.env.NEXT_PUBLIC_API_URL || '';
 
 function getToken(): string | null {
@@ -40,7 +60,8 @@ export async function createJob(payload: CreateJobRequest): Promise<Job> {
     body: JSON.stringify(payload),
   });
   if (!res.ok) return handleError(res);
-  return res.json();
+  const raw = await res.json();
+  return mapJob(raw);
 }
 
 export async function getJobs(): Promise<Job[]> {
@@ -48,13 +69,15 @@ export async function getJobs(): Promise<Job[]> {
   if (!res.ok) return handleError(res);
   const data = await res.json();
   // Backend returns { jobs: Job[], total: number }
-  return Array.isArray(data) ? data : (data.jobs ?? []);
+  const rawJobs = Array.isArray(data) ? data : (data.jobs ?? []);
+  return rawJobs.map(mapJob);
 }
 
 export async function getJob(id: string): Promise<Job> {
   const res = await fetchWithAuth(`/api/jobs/${id}`);
   if (!res.ok) return handleError(res);
-  return res.json();
+  const raw = await res.json();
+  return mapJob(raw);
 }
 
 export async function retryJob(id: string): Promise<Job> {
@@ -62,7 +85,8 @@ export async function retryJob(id: string): Promise<Job> {
     method: 'POST',
   });
   if (!res.ok) return handleError(res);
-  return res.json();
+  const raw = await res.json();
+  return mapJob(raw);
 }
 
 export async function deleteJob(id: string): Promise<void> {
