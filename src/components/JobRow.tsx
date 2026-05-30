@@ -38,7 +38,16 @@ export default function JobRow({ job }: JobRowProps) {
       </div>
       <div className="flex shrink-0 items-center gap-2">
         {job.youtubeUrl && job.status === 'completed' && (
-          <span title="YouTube" className="text-[#EF4444]">📺</span>
+          <a
+            href={job.youtubeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+            className="rounded-md bg-[#EF4444] px-2 py-1 text-xs font-medium text-white hover:bg-red-600 transition"
+            title="Open on YouTube"
+          >
+            ▶ YouTube
+          </a>
         )}
         <StatusBadge status={job.status} />
       </div>
