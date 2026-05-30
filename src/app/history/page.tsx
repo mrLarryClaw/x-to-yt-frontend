@@ -14,8 +14,19 @@ export default function HistoryPage() {
 
   useEffect(() => {
     getJobs()
-      .then((data) => setJobs(data))
-      .catch(() => setError('Could not load history'))
+      .then((data) => {
+        setJobs(data);
+      })
+      .catch((err) => {
+        console.error('Failed to load jobs:', err);
+        // If unauthorized, redirect to login
+        if (err?.message?.includes('401') || err?.message?.includes('unauthorized')) {
+          localStorage.removeItem('x2yt_token');
+          router.push('/');
+          return;
+        }
+        setError('Could not load history. Try logging in again.');
+      })
       .finally(() => setLoading(false));
   }, []);
 
